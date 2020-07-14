@@ -1,0 +1,6 @@
+#Cooldown in seconds
+cooldown: 12
+
+#Cooldown message, use {cooldown} for the time.
+message: "Please wait {cooldown} seconds before using an ender pearl."
+
