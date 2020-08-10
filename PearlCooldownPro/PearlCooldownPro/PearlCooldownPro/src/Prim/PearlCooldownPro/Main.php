@@ -31,7 +31,7 @@ class Main extends PluginBase implements Listener {
                 $time = time() - $this->pcooldown[$player->getName()];
                 $message = $this->config->get("message");
                 $message = str_replace("{cooldown}", ($cooldown - $time), $message);
-                $player->sendMessage(TextFormat::GOLD . $message);
+                $player->sendMessage($message);
             } else {
                 $this->pcooldown[$player->getName()] = time();
             }
