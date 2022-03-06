@@ -2,41 +2,42 @@
 
 namespace Prim\PearlCooldownPro;
 
+use pocketmine\event\player\PlayerItemUseEvent;
+use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\plugin\PluginBase;
-use pocketmine\event\player\PlayerInteractEvent;
-use pocketmine\utils\Config;
 use pocketmine\item\EnderPearl;
 use pocketmine\event\Listener;
-use pocketmine\utils\TextFormat;
+use function str_replace;
+use function time;
 
 class Main extends PluginBase implements Listener {
-	
-	private $pcooldown;
-	private $config;
-	
-	public function onEnable() {
+
+	public int $cooldown;
+	public string $message;
+
+	public array $cooldowns = [];
+
+	public function onEnable() : void {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
-        $this->saveResource("config.yml");
-		$this->config = new Config($this->getDataFolder()."config.yml", Config::YAML);
+		$this->cooldown = $this->getConfig()->get('cooldown');
+		$this->message = $this->getConfig()->get('message');
     }
-   
-     public function onEnderPearl(PlayerInteractEvent $event){
-        $item = $event->getItem();
-		if($event->getAction() === PlayerInteractEvent::RIGHT_CLICK_AIR){
-        if($item instanceof EnderPearl) {
-            $cooldown = $this->config->get("cooldown");
-            $player = $event->getPlayer();
-            if (isset($this->pcooldown[$player->getName()]) and time() - $this->pcooldown[$player->getName()] < $cooldown) {
-                $event->setCancelled(true);
-                $time = time() - $this->pcooldown[$player->getName()];
-                $message = $this->config->get("message");
-                $message = str_replace("{cooldown}", ($cooldown - $time), $message);
-                $player->sendMessage($message);
-            } else {
-                $this->pcooldown[$player->getName()] = time();
-            }
+
+	public function onItemUse(PlayerItemUseEvent $event) : void {
+		if($event->getItem() instanceof EnderPearl){
+			$player = $event->getPlayer();
+			$cd = $this->cooldowns[$player->getId()] ?? null;
+			if($cd !== null && time() - $cd < $this->cooldown){
+				$event->cancel();
+				$player->sendMessage(str_replace('{cooldown}', $this->cooldown - (time() - $cd), $this->message));
+			} else {
+				$this->cooldowns[$player->getId()] = time();
+			}
 		}
-        }
-    }
+	}
+
+	public function onQuit(PlayerQuitEvent $event) : void {
+		unset($this->cooldowns[$event->getPlayer()->getId()]);
+	}
 
 }
